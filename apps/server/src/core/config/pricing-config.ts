@@ -1,0 +1,5 @@
+export const PricingConfig = {
+  MAX_TOKENS_PER_MESSAGE:2000,
+  MAX_ALLOWED_MESSAGES_IN_REPORT:6,
+  FREE_REPORTS:20,
+};

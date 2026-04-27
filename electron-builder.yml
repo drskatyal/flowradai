@@ -1,0 +1,87 @@
+appId: com.flowrad.desktop
+productName: Flowrad
+directories:
+  output: dist/desktop
+  buildResources: build
+
+compression: maximum
+
+# Critical: Disable all dependency processing
+npmRebuild: false
+nodeGypRebuild: false
+buildDependenciesFromSource: false
+
+# Use asar to avoid pnpm symlink issues
+asar: true
+files:
+  - "apps/desktop/**/*"
+  - "package.json"
+  - "!**/node_modules/**"
+
+extraResources:
+  # Standalone App (Unpacked for execution and matching main.js path)
+  - from: "apps/client/.next/standalone/apps/client"
+    to: "apps/client"
+  - from: "apps/client/.next/standalone/node_modules"
+    to: "node_modules"
+  - from: "apps/client/public"
+    to: "apps/client/public"
+  - from: "apps/client/.next/static"
+    to: "apps/client/.next/static"
+
+# Ignore missing optional platform-specific dependencies
+afterPack: null
+
+linux:
+  icon: desktop-icons/flowrad-logo.png
+  target:
+    - target: deb
+      arch:
+        - x64
+        - arm64
+    - target: AppImage
+      arch:
+        - x64
+        - arm64
+  category: Utility
+  maintainer: Flowrad.ai <support@flowrad.ai>
+  synopsis: Flowrad Desktop Application
+  description: |
+    Flowrad Desktop Application
+  artifactName: ${productName}-${version}.${ext}
+
+# Debian-specific configuration
+deb:
+  depends:
+    - libnotify4
+    - libxtst6
+    - libnss3
+    - libatspi2.0-0
+    - libdrm2
+    - libgbm1
+    - libxcb-dri3-0
+
+mac:
+  icon: desktop-icons/flowrad-logo.icns
+  target:
+    - dmg
+
+win:
+  icon: desktop-icons/flowrad-logo.ico
+  target:
+    - target: nsis
+      arch:
+        - x64
+        - ia32
+
+nsis:
+  oneClick: false
+  allowToChangeInstallationDirectory: true
+  allowElevation: true
+  createDesktopShortcut: true
+  createStartMenuShortcut: true
+  perMachine: true
+  runAfterFinish: true
+  deleteAppDataOnUninstall: false
+  # Include custom NSIS script to handle running processes
+  include: build/installer.nsh

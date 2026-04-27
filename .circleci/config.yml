@@ -1,0 +1,375 @@
+version: 2.1
+
+parameters:
+  deploy_to:
+    type: enum
+    enum: ["staging", "production", "none"]
+    default: "none"
+
+executors:
+  node-executor:
+    docker:
+      - image: cimg/node:18.20.5-browsers
+
+jobs:
+  prepare-deployment:
+    executor: node-executor
+    parameters:
+      environment:
+        type: string
+    steps:
+      - checkout
+      - run:
+          name: Install system dependencies
+          command: |
+            sudo apt-get update -qq
+            sudo apt-get install -y --no-install-recommends libvips-dev
+      - run:
+          name: Install dependencies
+          command: pnpm install --frozen-lockfile
+      - run:
+          name: Setup Environment Variables and Build Each App
+          command: |
+            echo "=== Environment Setup Debug ==="
+            echo "Environment parameter: << parameters.environment >>"
+            
+            # Create env files at app level (keep these for runtime)
+            if [ "<< parameters.environment >>" = "production" ]; then
+              echo "=== PRODUCTION ENVIRONMENT ==="
+              
+              echo "Creating production environment files..."
+              echo "PROD_CLIENT_ENV_CONTENT length: ${#PROD_CLIENT_ENV_CONTENT}"
+              echo "PROD_SERVER_ENV_CONTENT length: ${#PROD_SERVER_ENV_CONTENT}"
+              echo "PROD_ADMIN_ENV_CONTENT length: ${#PROD_ADMIN_ENV_CONTENT}"
+              
+              echo "=== DECODED PRODUCTION ENVIRONMENT CONTENT ==="
+              echo "--- CLIENT ENV CONTENT ---"
+              echo "${PROD_CLIENT_ENV_CONTENT}" | base64 -d
+              echo "--- END CLIENT ENV ---"
+              
+              echo "--- SERVER ENV CONTENT ---"
+              echo "${PROD_SERVER_ENV_CONTENT}" | base64 -d
+              echo "--- END SERVER ENV ---"
+              
+              echo "--- ADMIN ENV CONTENT ---"
+              echo "${PROD_ADMIN_ENV_CONTENT}" | base64 -d
+              echo "--- END ADMIN ENV ---"
+              
+              echo "Decoding and creating client .env..."
+              echo "${PROD_CLIENT_ENV_CONTENT}" | base64 -d > ./apps/client/.env
+              echo "Client .env file created. Full content:"
+              cat ./apps/client/.env
+              
+              echo "Decoding and creating server .env..."
+              echo "${PROD_SERVER_ENV_CONTENT}" | base64 -d > ./apps/server/.env
+              echo "Server .env file created. Full content:"
+              cat ./apps/server/.env
+              
+              echo "Decoding and creating admin .env..."
+              echo "${PROD_ADMIN_ENV_CONTENT}" | base64 -d > ./apps/admin/.env
+              echo "Admin .env file created. Full content:"
+              cat ./apps/admin/.env
+              
+              # Build each app with its specific environment at root
+              echo "=== Building Client ==="
+              echo "Setting root .env for client build..."
+              echo "${PROD_CLIENT_ENV_CONTENT}" | base64 -d > ./.env
+              echo "Root .env for client build - FULL CONTENT:"
+              cat ./.env
+              pnpm nx build client --verbose
+              
+              echo "=== Building Admin ==="
+              echo "Setting root .env for admin build..."
+              echo "${PROD_ADMIN_ENV_CONTENT}" | base64 -d > ./.env
+              echo "Root .env for admin build - FULL CONTENT:"
+              cat ./.env
+              echo "Current working directory: $(pwd)"
+              echo "Files in current directory:"
+              ls -la
+              echo "Admin app directory contents:"
+              ls -la ./apps/admin/
+              echo "Starting admin build..."
+              pnpm nx build admin --verbose
+              
+              echo "=== Building Server ==="
+              echo "Setting root .env for server build..."
+              echo "${PROD_SERVER_ENV_CONTENT}" | base64 -d > ./.env
+              echo "Root .env for server build - FULL CONTENT:"
+              cat ./.env
+              pnpm nx build server --verbose
+              
+            else
+              echo "=== STAGING ENVIRONMENT ==="
+              
+              echo "Creating staging environment files..."
+              echo "STAGING_CLIENT_ENV_CONTENT length: ${#STAGING_CLIENT_ENV_CONTENT}"
+              echo "STAGING_SERVER_ENV_CONTENT length: ${#STAGING_SERVER_ENV_CONTENT}"
+              echo "STAGING_ADMIN_ENV_CONTENT length: ${#STAGING_ADMIN_ENV_CONTENT}"
+              
+              echo "=== DECODED STAGING ENVIRONMENT CONTENT ==="
+              echo "--- CLIENT ENV CONTENT ---"
+              echo "${STAGING_CLIENT_ENV_CONTENT}" | base64 -d
+              echo "--- END CLIENT ENV ---"
+              
+              echo "--- SERVER ENV CONTENT ---"
+              echo "${STAGING_SERVER_ENV_CONTENT}" | base64 -d
+              echo "--- END SERVER ENV ---"
+              
+              echo "--- ADMIN ENV CONTENT ---"
+              echo "${STAGING_ADMIN_ENV_CONTENT}" | base64 -d
+              echo "--- END ADMIN ENV ---"
+              
+              echo "Decoding and creating client .env..."
+              echo "${STAGING_CLIENT_ENV_CONTENT}" | base64 -d > ./apps/client/.env
+              echo "Client .env file created. Full content:"
+              cat ./apps/client/.env
+              
+              echo "Decoding and creating server .env..."
+              echo "${STAGING_SERVER_ENV_CONTENT}" | base64 -d > ./apps/server/.env
+              echo "Server .env file created. Full content:"
+              cat ./apps/server/.env
+              
+              echo "Decoding and creating admin .env..."
+              echo "${STAGING_ADMIN_ENV_CONTENT}" | base64 -d > ./apps/admin/.env
+              echo "Admin .env file created. Full content:"
+              cat ./apps/admin/.env
+              
+              # Build each app with its specific environment at root
+              echo "=== Building Client ==="
+              echo "Setting root .env for client build..."
+              echo "${STAGING_CLIENT_ENV_CONTENT}" | base64 -d > ./.env
+              echo "Root .env for client build - FULL CONTENT:"
+              cat ./.env
+              pnpm nx build client --verbose
+              
+              echo "=== Building Admin ==="
+              echo "Setting root .env for admin build..."
+              echo "${STAGING_ADMIN_ENV_CONTENT}" | base64 -d > ./.env
+              echo "Root .env for admin build - FULL CONTENT:"
+              cat ./.env
+              echo "Current working directory: $(pwd)"
+              echo "Files in current directory:"
+              ls -la
+              echo "Admin app directory contents:"
+              ls -la ./apps/admin/
+              echo "Starting admin build..."
+              pnpm nx build admin --verbose
+              
+              echo "=== Building Server ==="
+              echo "Setting root .env for server build..."
+              echo "${STAGING_SERVER_ENV_CONTENT}" | base64 -d > ./.env
+              echo "Root .env for server build - FULL CONTENT:"
+              cat ./.env
+              pnpm nx build server --verbose
+            fi
+
+            # Clean up the root .env file after builds
+            rm -f ./.env
+
+            echo "SKIP_DEPLOY=false" >> "$BASH_ENV"
+      - run:
+          name: Clean and Archive
+          command: |
+            mkdir -p /tmp/artifacts
+
+            tar -czf /tmp/artifacts/project-build.tar.gz \
+              --exclude='node_modules' \
+              --exclude='./apps/client/.next/cache' \
+              --exclude='./apps/admin/.next/cache' \
+              ./apps/client \
+              ./apps/server \
+              ./apps/admin \
+              ./dist \
+              ./nx.json \
+              ./package.json \
+              ./pnpm-lock.yaml \
+              ./tsconfig.json \
+              ./tsconfig.base.json \
+              ./ecosystem.config.js \
+              ./components.json
+
+            echo -e "\nFinal archive size:"
+            ls -lh /tmp/artifacts/project-build.tar.gz
+
+            mv /tmp/artifacts/project-build.tar.gz .
+      - persist_to_workspace:
+          root: .
+          paths:
+            - project-build.tar.gz
+
+  deploy-app:
+    executor: node-executor
+    parameters:
+      environment:
+        type: string
+    steps:
+      - run:
+          name: Check if deployment should be skipped
+          command: |
+            if [[ "${SKIP_DEPLOY}" == "true" ]]; then
+              echo "No changes detected, skipping deployment"
+              circleci-agent step halt
+              exit 0
+            fi
+      - add_ssh_keys:
+          fingerprints:
+            - $([[ "<< parameters.environment >>" == "production" ]] && echo "${PROD_SSH_KEY_FINGERPRINT}" || echo "${STAGING_SSH_KEY_FINGERPRINT}")
+      - attach_workspace:
+          at: .
+      - run:
+          name: Setup SSH Config
+          command: |
+            mkdir -p ~/.ssh
+            echo -e "Host *\n\tStrictHostKeyChecking no\n\tUserKnownHostsFile=/dev/null" > ~/.ssh/config
+            chmod 600 ~/.ssh/config
+      - run:
+          name: Setup Deployment Environment
+          command: |
+            if [ "<< parameters.environment >>" = "production" ]; then
+              export HOST="${PROD_DEPLOY_HOST}"
+              export DEPLOY_PATH="${PROD_DEPLOY_PATH}"
+            else
+              export HOST="${STAGING_DEPLOY_HOST}"
+              export DEPLOY_PATH="${STAGING_DEPLOY_PATH}"
+            fi
+            echo "export HOST=${HOST}" >> $BASH_ENV
+            echo "export DEPLOY_PATH=${DEPLOY_PATH}" >> $BASH_ENV
+
+      - run:
+          name: Prepare Remote Directory
+          command: |
+            echo "Creating and setting permissions for ${DEPLOY_PATH}"
+            ssh ubuntu@${HOST} "sudo mkdir -p ${DEPLOY_PATH}"
+
+            echo "Setting ownership"
+            ssh ubuntu@${HOST} "sudo chown -R ubuntu:ubuntu ${DEPLOY_PATH}"
+
+            echo "Setting permissions"
+            ssh ubuntu@${HOST} "sudo chmod -R 755 ${DEPLOY_PATH}"
+
+            echo "Cleaning old files (preserving node_modules)"
+            ssh ubuntu@${HOST} "cd ${DEPLOY_PATH} && find . -mindepth 1 -maxdepth 1 ! -name 'node_modules' -exec rm -rf {} +"
+
+      - run:
+          name: Copy Build Archive
+          command: |
+            echo "Copying project-build.tar.gz to ${DEPLOY_PATH}"
+            scp project-build.tar.gz ubuntu@${HOST}:${DEPLOY_PATH}/
+
+            echo "Verifying file exists on remote"
+            ssh ubuntu@${HOST} "ls -lh ${DEPLOY_PATH}/project-build.tar.gz"
+
+      - run:
+          name: Extract Archive
+          command: |
+            echo "Extracting archive on remote server"
+            ssh ubuntu@${HOST} "cd ${DEPLOY_PATH} && tar -xzf project-build.tar.gz"
+
+            echo "Listing extracted contents"
+            ssh ubuntu@${HOST} "ls -la ${DEPLOY_PATH}"
+
+      - run:
+          name: Setup Node Environment
+          command: |
+            echo "Setting up Node environment"
+            ssh ubuntu@${HOST} 'cd '"${DEPLOY_PATH}"' && \
+              source ~/.bashrc && \
+              source ~/.profile && \
+              export NVM_DIR="$HOME/.nvm" && \
+              [ -s "$NVM_DIR/nvm.sh" ] && . "$NVM_DIR/nvm.sh" && \
+              node --version && \
+              npm --version'
+
+      - run:
+          name: Install Dependencies
+          command: |
+            echo "Installing production dependencies"
+            ssh ubuntu@${HOST} 'cd '"${DEPLOY_PATH}"' && \
+              source ~/.bashrc && \
+              source ~/.profile && \
+              export NVM_DIR="$HOME/.nvm" && \
+              [ -s "$NVM_DIR/nvm.sh" ] && . "$NVM_DIR/nvm.sh" && \
+              export NX_DAEMON=false && \
+              pnpm install --prod --ignore-scripts'
+
+      - run:
+          name: Clear Xenova Transformers Cache
+          command: |
+            echo "Clearing @xenova/transformers .cache on remote"
+            ssh ubuntu@${HOST} 'cd '"${DEPLOY_PATH}"' && \
+              if [ -d node_modules/@xenova/transformers/.cache ]; then \
+                rm -rf node_modules/@xenova/transformers/.cache && \
+                echo "Removed xenova cache: node_modules/@xenova/transformers/.cache"; \
+              else \
+                echo "Xenova cache not found, skipping"; \
+              fi'
+
+      - run:
+          name: Reload PM2
+          command: |
+            echo "Reloading PM2 processes"
+            ssh ubuntu@${HOST} 'cd '"${DEPLOY_PATH}"' && \
+              source ~/.bashrc && \
+              source ~/.profile && \
+              export NVM_DIR="$HOME/.nvm" && \
+              [ -s "$NVM_DIR/nvm.sh" ] && . "$NVM_DIR/nvm.sh" && \
+              pm2 reload ecosystem.config.js --update-env'
+
+      # - run:
+      #     name: Verify Deployment
+      #     command: |
+      #       echo "Checking PM2 status"
+      #       if ! ssh ubuntu@${HOST} 'source ~/.bashrc && \
+      #         source ~/.profile && \
+      #         export NVM_DIR="$HOME/.nvm" && \
+      #         [ -s "$NVM_DIR/nvm.sh" ] && . "$NVM_DIR/nvm.sh" && \
+      #         pm2 list | grep -q "online"'; then
+      #         echo "Error: PM2 processes are not running correctly"
+      #         exit 1
+      #       fi
+
+      #       echo "Checking application logs"
+      #       ssh ubuntu@${HOST} 'source ~/.bashrc && \
+      #         source ~/.profile && \
+      #         export NVM_DIR="$HOME/.nvm" && \
+      #         [ -s "$NVM_DIR/nvm.sh" ] && . "$NVM_DIR/nvm.sh" && \
+      #         pm2 logs --lines 10'
+
+      #       echo "Deployment verification completed successfully"
+      #       exit 0
+
+workflows:
+  deploy:
+    jobs:
+      - prepare-deployment:
+          name: prepare-staging
+          environment: staging
+          filters:
+            branches:
+              only:
+                - staging
+                - "FE/BE-emdeddin-vectors"
+      - prepare-deployment:
+          name: prepare-production
+          environment: production
+          filters:
+            branches:
+              only: main
+      - deploy-app:
+          name: deploy-staging
+          requires:
+            - prepare-staging
+          filters:
+            branches:
+              only:
+                - staging
+                - "FE/BE-emdeddin-vectors"
+          environment: staging
+      - deploy-app:
+          name: deploy-production
+          requires:
+            - prepare-production
+          filters:
+            branches:
+              only: main
+          environment: production

@@ -1,0 +1,1 @@
+export { getTableListColumns } from "./coupon-code-list";

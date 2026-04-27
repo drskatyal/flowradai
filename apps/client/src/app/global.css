@@ -1,0 +1,231 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@import "../styles/index.css";
+
+@layer base {
+  :root {
+    --background: 0 0% 100%;
+    --foreground: 222.2 47.4% 11.2%;
+
+    --muted: 0 0% 98%;
+    --muted-foreground: 215.4 16.3% 46.9%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 222.2 47.4% 11.2%;
+
+    --border: 214.3 31.8% 91.4%;
+    --input: 214.3 31.8% 91.4%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 222.2 47.4% 11.2%;
+
+    --primary: 222.2 47.4% 11.2%;
+    --primary-foreground: 210 40% 98%;
+
+    --secondary: 210 40% 96.1%;
+    --secondary-foreground: 222.2 47.4% 11.2%;
+
+    --accent: 210 40% 96.1%;
+    --accent-foreground: 222.2 47.4% 11.2%;
+
+    --destructive: 0 100% 50%;
+    --destructive-foreground: 210 40% 98%;
+
+    --ring: 215 20.2% 65.1%;
+
+    --radius: 0.5rem;
+
+    --surface-primary: 240 4.8% 95.9%;
+  }
+
+  .dark {
+    --background: 224 71% 4%;
+    --foreground: 213 31% 91%;
+
+    --muted: 223 47% 11%;
+    --muted-foreground: 215.4 16.3% 56.9%;
+
+    --accent: 216 34% 17%;
+    --accent-foreground: 210 40% 98%;
+
+    --popover: 224 71% 4%;
+    --popover-foreground: 215 20.2% 65.1%;
+
+    --border: 216 34% 17%;
+    --input: 216 34% 17%;
+
+    --card: 224 71% 4%;
+    --card-foreground: 213 31% 91%;
+
+    --primary: 210 40% 98%;
+    --primary-foreground: 222.2 47.4% 1.2%;
+
+    --secondary: 222.2 47.4% 11.2%;
+    --secondary-foreground: 210 40% 98%;
+
+    --destructive: 0 63% 31%;
+    --destructive-foreground: 210 40% 98%;
+
+    --ring: 216 34% 17%;
+
+    --radius: 0.5rem;
+
+    --surface-primary: 223 47% 1%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground;
+    font-feature-settings: "rlig" 1, "calt" 1;
+  }
+}
+
+@layer utilities {
+  ::-webkit-scrollbar {
+    width: 5px;
+    height: 5px;
+  }
+
+  ::-webkit-scrollbar-track {
+    border-radius: 100vh;
+    background: hsl(var(--background));
+  }
+
+  ::-webkit-scrollbar-thumb {
+    background: hsl(var(--muted));
+    border-radius: 100vh;
+  }
+}
+
+/* Red section scrollbar */
+.red-scroll::-webkit-scrollbar {
+  width: 5px;
+  cursor: pointer;
+
+}
+
+.red-scroll::-webkit-scrollbar-track {
+  background: #fee2e2;
+}
+
+.red-scroll::-webkit-scrollbar-thumb {
+  background: #e98585;
+  border-radius: 6px;
+}
+
+/* Blue section scrollbar */
+.blue-scroll::-webkit-scrollbar {
+  width: 5px;
+}
+
+.blue-scroll::-webkit-scrollbar-track {
+  background: #dbeafe;
+  /* blue-100 */
+}
+
+.blue-scroll::-webkit-scrollbar-thumb {
+  background: #99abdb;
+  /* blue-700 */
+  border-radius: 6px;
+}
+
+.drag-area {
+  -webkit-app-region: drag;
+  cursor: move;
+}
+
+
+.no-drag {
+  -webkit-app-region: no-drag;
+}
+
+body.floating-body {
+  background-color: transparent !important;
+}
+
+body.floating-body #__next {
+  background-color: transparent !important;
+}
+
+.widget-container {
+  /* Dark glass base */
+  background: rgba(30, 30, 30, 0.68);
+
+  /* Stronger glass blur + richness */
+  backdrop-filter: blur(28px) saturate(200%);
+  -webkit-backdrop-filter: blur(28px) saturate(200%);
+
+  /* Sharper glass edge */
+  border: 1px solid rgba(255, 255, 255, 0.18);
+
+  /* Lift + shine */
+  box-shadow:
+    0 10px 40px rgba(0, 0, 0, 0.45),
+    inset 0 1px 0 rgba(255, 255, 255, 0.08);
+
+  /* border-radius: 20px; */
+  color: #FFFFFF;
+}
+
+.widget-input-area {
+  background: rgba(255, 255, 255, 0.04);
+
+  backdrop-filter: blur(180px) saturate(220%);
+  -webkit-backdrop-filter: blur(180px) saturate(220%);
+
+  border: 1px solid rgba(255, 255, 255, 0.2);
+
+  box-shadow:
+    inset 0 1px 1px rgba(255, 255, 255, 0.18),
+    0 8px 24px rgba(0, 0, 0, 0.45);
+
+  color: #fff;
+  border-radius: 6px;
+}
+
+/* Placeholder */
+.widget-input-area::placeholder {
+  color: rgba(255, 255, 255, 0.65);
+}
+
+.widget-button {
+  /* Same gradient, just richer */
+  background: linear-gradient(135deg, #5AA3FF 0%, #007AFF 100%);
+  border: none;
+  color: #FFFFFF;
+  font-weight: 500;
+
+  /* Button shine */
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.35),
+    0 6px 20px rgba(0, 122, 255, 0.35);
+
+  border-radius: 8px;
+}
+
+.widget-header {
+  /* Dark glass base */
+  background: rgba(30, 30, 30, 0.68);
+
+  /* Stronger glass blur + richness */
+  backdrop-filter: blur(28px) saturate(200%);
+  -webkit-backdrop-filter: blur(28px) saturate(200%);
+
+  /* Sharper glass edge */
+  border: 1px solid rgba(255, 255, 255, 0.18);
+
+  /* Lift + shine */
+  box-shadow:
+    0 10px 40px rgba(0, 0, 0, 0.45),
+    inset 0 1px 0 rgba(255, 255, 255, 0.08);
+
+  /* border-radius: 20px; */
+  color: #FFFFFF;
+}
